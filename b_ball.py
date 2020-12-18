@@ -13,5 +13,5 @@ def b_ball(c,g,m,x_vel,y_vel,z_vel):
 	t4 = z_vel**2;
 	t5 = t2+t3+t4;
 	t6 = math.sqrt(t5);
-	b = np.array([-c*t6*x_vel,-g*m-c*t6*y_vel,-c*t6*z_vel]);
+	b = np.array([[-c*t6*x_vel],[-g*m-c*t6*y_vel],[-c*t6*z_vel]]);
 	return b

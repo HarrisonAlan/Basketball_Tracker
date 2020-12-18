@@ -1,65 +1,76 @@
 # Harrison Hidalgo
-# ECE 5725 
+# MAE 6760
 # For testing different functions.
-import A_ball 
-import b_ball 
-import ball_calc
+
 import numpy as np
-import covariances_small_enough 
-import measurement_validation 
-import orientation_selector
 import runge_kutta
-import transformations
-import math
-import path_tracker
-from system_iterator import *
-import SR_SPF_Ball
-import find_angles
-import Geometric_Variables as GV
+from SR_SPF_Ball import *
+import math 
+import matplotlib
+import matplotlib.pyplot as plt
+from EKF_filter import *
+from SPF_Ball import *
 
-h = 0.05
-ffun = 'ball_calc.ball_calc'
-front = np.transpose(np.array([1,0,0]))
-up = np.transpose(np.array([0,1,0]))
-W_of_backboard = 5
-H_of_backboard = 5
-T_of_backboard = 1
-r_of_ball = 0.5
-center_hoop = np.array([1,1,0])
-backboard = np.array([0,0,0])
+N = 500
+n_sig = 4.0
+end_time = 5
+time = np.linspace(0,end_time,N)
 
-theta = math.pi/2
-phi = math.pi/2
-psi = math.pi/2
-x = np.array([[1],[0],[0]])
-x_new = transformations.transform_baseboard_to_backboard(theta,phi,psi,x)
+P_x = np.array([[1,0,0,0.5,0,0],[0,1,0,0,0.5,0],[0,0,1,0,0,0.5],[0.5,0,0,1,0,0],[0,0.5,0,0,1,0],[0,0,0.5,0,0,1]])
+P_v = np.identity(6)*0.001
+P_n = np.identity(6)*0.01
 
-n_sig = 3
+Q = np.identity(6)*0.001
+R = np.identity(6)*0.01
 
-#measurement = np.array([1,1,1,1,np.random.rand*5,np.random.rand*-2])
-P_x = np.identity(6)*0.1+0.0001
-P_v = np.identity(6)*0.1+0.0001
-P_n = np.identity(6)*0.1+0.0001
+w=np.random.normal(0,math.sqrt(P_v[1,1]),(1,N))
+v=np.random.normal(0,math.sqrt(P_n[1,1]),(1,N))
+
+for i in range(1,6):
+	w = np.concatenate((w,np.random.normal(0,math.sqrt(P_v[i,i]),(1,N))))
+	v = np.concatenate((v,np.random.normal(0,math.sqrt(P_n[i,i]),(1,N))))
+
+measurement = np.array([1,1,1,1,1,1])
 
 S_x0 = np.linalg.cholesky(P_x)
 S_v0 = np.linalg.cholesky(P_v)
 S_n0 = np.linalg.cholesky(P_n)
 
-x_ball_init = np.array([0.229, 0.189, 0.329,0,0,0])
+h = end_time/N
 
-print(system_iterator(GV.e_b,GV.r_B0,GV.rGB0,h,x_ball_init,GV.front,GV.up,GV.W_of_backboard,GV.H_of_backboard,GV.T_of_backboard,0.06542,GV.center_hoop))
-#print(path_tracker.path_tracker(h,x_ball_init,front,up,W_of_backboard,H_of_backboard,T_of_backboard,r_of_ball,center_hoop,backboard))
-#print(SR_SPF_Ball.SR_SPF_Ball(x_ball_init,S_x0,S_v0,S_n0,n_sig,measurement,h))
+x_path = np.array([np.cos(time),time*0,time*0,-np.sin(time),time*0,time*0])
 
-A = [1,2,3]
-B = [4,5,6]
-C = np.append(transformations.transform_camera_to_baseboard(A),transformations.transform_camera_to_baseboard(B))
-#print(C) 
+x_noisy = x_path + w
+z_noisy = x_noisy + v
+print(z_noisy.shape)
+#print(x_path)
+#plt.plot(time,z_noisy[0,:],'g')
+#plt.plot(time,x_noisy[0,:],'r')
+#plt.plot(time,x_path[0,:],'b')
+#plt.show()
+#plt.close()
+x_hat_SPF = np.zeros((6,N))
+x_hat_EKF = np.zeros((6,N))
+cov   = np.zeros((6,N))
 
-theta = 0 
-phi = 0
-psi = 0 
-r_B = .2
-#print(find_angles.find_angles(theta,phi,psi,r_B))
+x_hat_SPF[:,None,0], Pk2k2_SPF = SPF_Ball(z_noisy[:,None,0],P_x,Q,R,n_sig,z_noisy[:,None,i],h)
+x_hat_EKF[:,None,0],Pk2k2_EKF = EKF_filter(z_noisy[:,None,0],P_x,z_noisy[:,None,0],P_v,P_n,h,time[0])
+#x_hat[:,None,0],S_xk = SR_SPF_Ball(z_noisy[:,None,0],S_x0,S_v0,S_n0,n_sig,z_noisy[:,None,0],h)
+#print(x_hat[:,None,0].shape)
+print('start')
+for i in range(1,N):
+	x_hat_EKF[:,None,i], Pk2k2_EKF = EKF_filter(x_hat_EKF[:,None,i-1],Pk2k2_EKF,z_noisy[:,None,i],P_v,P_n,h,time[i])
+	#x_hat[:,None,i],S_xk = SR_SPF_Ball(x_hat[:,None,i-1],S_xk,S_v0,S_n0,n_sig,z_noisy[:,None,i],h)
+	#cov[:,i] = np.diag(np.matmul(S_xk,np.transpose(S_xk)))
+	x_hat_SPF[:,None,i], Pk2k2_SPF = SPF_Ball(x_hat_SPF[:,None,i-1],Pk2k2_SPF,Q,R,n_sig,z_noisy[:,None,i],h)
+print('end')
 
-#print(np.diag(np.matmul(S_xk,np.transpose(S_xk))))
+plt.figure(1)
+plt.plot(time,x_hat_EKF[0,:],'g')
+plt.plot(time,x_hat_SPF[0,:],'b')
+plt.plot(time,x_path[0,:],'r')
+
+plt.figure(2)
+plt.plot(time,x_path[0,:]-x_hat_EKF[0,:],'g')
+plt.plot(time,x_path[0,:]-x_hat_SPF[0,:],'b')
+plt.show()
