@@ -63,8 +63,10 @@ def SR_SPF_Ball(x_0,S_x0,S_v0,S_n0,n_sig,measurement,dt):
   x_hat=x_p1+np.matmul(Kalman_Gain,innovation)
   KF_gain_cov = np.matmul(Kalman_Gain,P_xy)
   #S_xk = np.linalg.cholesky(S_x1+np.matmul(KF_gain_cov[:,None,0],np.transpose(KF_gain_cov[:,None,0]))*-1)
+  S_x1 = validateCovMatrix(S_x1)
   S_xk = cholupdate(S_x1,KF_gain_cov[:,None,0],-1)
   for i in range(1,nx):
+    Sx_k = validateCovMatrix(S_xk)
     S_xk = cholupdate(S_xk,KF_gain_cov[:,None,i],-1);
   return x_hat,S_xk
 

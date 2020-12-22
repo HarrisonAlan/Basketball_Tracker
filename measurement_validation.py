@@ -6,7 +6,7 @@ def measurement_validation(measurement,P,del_t,lam0,R,x_hat):
     import numpy as np
     # Find innovation and covariance
     H = np.identity(6)
-    innovation = measurement - np.matmul(H,x_hat)
+    innovation = measurement - np.matmul(H,x_hat[:,None,0])
     S = np.matmul(np.matmul(H,P),np.transpose(H))+R
     # Find normalized innovation squared
     lam = np.matmul(np.matmul(np.transpose(innovation),np.linalg.inv(S)),innovation)

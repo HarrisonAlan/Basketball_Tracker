@@ -12,5 +12,4 @@ def runge_kutta(del_t,t0,x):
     k4 = ball_calc.ball_calc(x+del_t*k3)
     x_next = x + del_t/6*(k1+2*k2+2*k3+k4)
     t_next = t0 + del_t
-    #print(x_next)
     return t_next,x_next

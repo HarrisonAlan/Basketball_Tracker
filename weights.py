@@ -4,7 +4,7 @@
 
 # Important numbers
 nx    = 6.0 # Number of states
-n_sig = 4.0 # Number of sigma points
+n_sig = 5.0 # Number of sigma points
 ## State weights
 wm  = 1/(2*n_sig**2)
 wm0 = (n_sig**2-nx)/n_sig**2

@@ -9,8 +9,6 @@ import Physical_Variables as p
 
 def ball_calc(x):
 	## Unpack X
-	#print('ball calc')
-	#print(x)
 	X=x[0,0]
 	Y=x[1,0]
 	Z=x[2,0]
